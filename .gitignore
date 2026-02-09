@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.claude/
+frames/
+
+.DS_Store
+._.DS_Store
+**/.DS_Store
+**/._.DS_Store
