@@ -13,6 +13,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import * as d3 from "d3";
 import * as Chart from "chart.js";
 
+/* ─── Ontology / GraphRAG layer ───
+   Additive modules that turn the keyword network into an ontology and add
+   evidence, GraphRAG querying and briefing — all on mock data, no API key. */
+import { nodeTypeMeta, nodeTypeColor } from "./src/ontology/schema.js";
+import { getFinanceOntology, enrichLegacy } from "./src/ontology/mockOntologyData.js";
+import OntologyQueryPanel from "./src/components/OntologyQueryPanel.jsx";
+import EvidencePanel from "./src/components/EvidencePanel.jsx";
+import DailyBriefing from "./src/components/DailyBriefing.jsx";
+
 /* ─── Chart.js Controller Registration ───
    Manually register all required controllers and elements.
    This avoids the "is not a registered controller" error
@@ -210,7 +219,13 @@ function ForceGraph({data, selectedNode, onNodeClick, width, height, C}){
       source: typeof d.source==='string'?d.source:d.source.id,
       target: typeof d.target==='string'?d.target:d.target.id,
       weight: d.weight,
+      type: d.type,
     }));
+
+    /* Ontology helpers: resolve a node's accent color + shape from its type,
+       falling back to the legacy index-based palette for untyped nodes. */
+    const typeColorOf = (d,i)=> d.type ? nodeTypeColor(d.type,C) : C.nodeColors[i%C.nodeColors.length];
+    const isDashedType = d => nodeTypeMeta(d.type).shape==="ring-dashed";
 
     const rScale = d3.scaleSqrt().domain([0,d3.max(nodes,d=>d.frequency)]).range([10,38]);
 
@@ -273,13 +288,14 @@ function ForceGraph({data, selectedNode, onNodeClick, width, height, C}){
         .on("end",(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null;})
       );
 
-    // Outer ring (sentiment color)
+    // Outer ring (sentiment color) — dashed for Event / Risk / Sentiment signals
     node.append("circle")
       .attr("r",d=>rScale(d.frequency)+3)
       .attr("fill","none")
       .attr("stroke",d=>sentColor(d.sentiment,C))
       .attr("stroke-width",2.5)
       .attr("stroke-opacity",.7)
+      .attr("stroke-dasharray",d=>isDashedType(d)?"3 3":null)
       .attr("filter","url(#nodeGlow)");
 
     // Main circle — logo or colored
@@ -287,23 +303,33 @@ function ForceGraph({data, selectedNode, onNodeClick, width, height, C}){
       const el = d3.select(this);
       const r = rScale(d.frequency);
 
+      const tc = typeColorOf(d,i);
+
       if(d.logo){
         el.append("circle").attr("r",r).attr("fill",C.nodeBg).attr("stroke",C.border).attr("stroke-width",1);
         el.append("circle").attr("r",r).attr("fill",`url(#logo-${d.id})`).attr("opacity",.95);
       } else {
         el.append("circle").attr("r",r)
-          .attr("fill",C.nodeColors[i%C.nodeColors.length])
+          .attr("fill",tc)
           .attr("fill-opacity",.2)
-          .attr("stroke",C.nodeColors[i%C.nodeColors.length])
+          .attr("stroke",tc)
           .attr("stroke-width",1.5);
         el.append("text")
           .text(d.label.slice(0,2).toUpperCase())
           .attr("text-anchor","middle")
           .attr("dy",".35em")
-          .attr("fill",C.nodeColors[i%C.nodeColors.length])
+          .attr("fill",tc)
           .attr("font-size",Math.max(9,r*.55))
           .attr("font-family","'Space Grotesk',sans-serif")
           .attr("font-weight",700)
+          .style("pointer-events","none");
+      }
+
+      // Ontology type accent rim — thin colored edge over the node (subtle).
+      if(d.type){
+        el.append("circle").attr("r",r-0.75)
+          .attr("fill","none").attr("stroke",tc)
+          .attr("stroke-width",1.5).attr("stroke-opacity",.6)
           .style("pointer-events","none");
       }
     });
@@ -546,7 +572,7 @@ Rules: 15-20 nodes. For tech companies, set logo to "https://logo.clearbit.com/D
    - Dark / Light theme toggle with smooth CSS transitions
    - Responsive graph area with ResizeObserver
    - Sidebar: TrendChart, SentDonut, TopBar, Drama Detector */
-const SUBS=["technology","worldnews","science","gaming"];
+const SUBS=["technology","worldnews","science","gaming","finance"];
 
 export default function App(){
   const [sub,setSub]=useState("technology");
@@ -555,8 +581,15 @@ export default function App(){
   const [loading,setLoading]=useState(false);
   const [mode,setMode]=useState("mock"); // "mock" | "api"
   const [theme,setTheme]=useState("dark"); // "dark" | "light"
+  const [showBrief,setShowBrief]=useState(false);
   const gRef=useRef(null);
   const [gSize,setGSize]=useState({w:600,h:500});
+
+  /** Select a node by id (used by the GraphRAG panel's related-node chips). */
+  const selectById=useCallback((id)=>{
+    const n=data?.nodes.find(x=>x.id===id);
+    if(n)setSel(n);
+  },[data]);
 
   const C = theme==="dark" ? DARK : LIGHT;
 
@@ -567,16 +600,23 @@ export default function App(){
     return ()=>ro.disconnect();
   },[]);
 
+  /* Build an ontology-shaped graph for a subreddit:
+     - finance → the hand-authored finance ontology
+     - others  → legacy mock data lifted into the ontology contract */
+  const buildGraph=useCallback((s)=>{
+    return s==="finance" ? getFinanceOntology() : enrichLegacy(genMockData(s), s);
+  },[]);
+
   const load=useCallback(async()=>{
     setLoading(true);setSel(null);
     if(mode==="api"){
       const d=await fetchFromClaude(sub);
-      if(d){setData(d);setLoading(false);return;}
+      if(d){setData(enrichLegacy(d,sub));setLoading(false);return;}
     }
     await new Promise(r=>setTimeout(r,700));
-    setData(genMockData(sub));
+    setData(buildGraph(sub));
     setLoading(false);
-  },[sub,mode]);
+  },[sub,mode,buildGraph]);
 
   useEffect(()=>{load()},[sub,load]);
 
@@ -658,6 +698,16 @@ export default function App(){
           }}>
             <span style={{fontSize:13,lineHeight:1}}>{theme==="dark"?"☀️":"🌙"}</span>
             {theme==="dark"?"LIGHT":"DARK"}
+          </button>
+
+          <button onClick={()=>setShowBrief(true)} disabled={!data} style={{
+            padding:"5px 10px",borderRadius:7,
+            border:`1px solid ${C.purple}`,
+            background:C.purple+"18",color:C.purple,
+            fontSize:9,fontFamily:"inherit",cursor:data?"pointer":"default",
+            letterSpacing:.5,opacity:data?1:.5,
+          }}>
+            📋 BRIEF
           </button>
 
           <button onClick={load} style={{
@@ -747,11 +797,28 @@ export default function App(){
                 }
               </div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:14,fontWeight:600,fontFamily:"'Space Grotesk',sans-serif"}}>{sel.label}</div>
-                <div style={{fontSize:10,color:C.dim,marginTop:2}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                  <span style={{fontSize:14,fontWeight:600,fontFamily:"'Space Grotesk',sans-serif"}}>{sel.label}</span>
+                  {sel.type&&(
+                    <span style={{
+                      fontSize:8,padding:"2px 6px",borderRadius:5,
+                      background:nodeTypeColor(sel.type,C)+"1f",color:nodeTypeColor(sel.type,C),
+                      border:`1px solid ${nodeTypeColor(sel.type,C)}55`,letterSpacing:.5,
+                    }}>{nodeTypeMeta(sel.type).glyph} {nodeTypeMeta(sel.type).label}</span>
+                  )}
+                  {sel.ticker&&<span style={{fontSize:9,color:C.accent,fontWeight:600}}>${sel.ticker}</span>}
+                </div>
+                <div style={{fontSize:10,color:C.dim,marginTop:3}}>
                   Mentions: <span style={{color:C.accent}}>{sel.frequency}</span> ·
                   Sentiment: <span style={{color:sentColor(sel.sentiment,C)}}>{sel.sentiment.toFixed(2)}</span>
+                  {sel.confidence!=null&&<> · Conf: <span style={{color:C.purple}}>{Math.round(sel.confidence*100)}%</span></>}
+                  {sel.evidenceCount!=null&&<> · Evidence: <span style={{color:C.blue}}>{sel.evidenceCount}</span></>}
                 </div>
+                {sel.sourceSubreddits?.length>0&&(
+                  <div style={{fontSize:9,color:C.dim,marginTop:3}}>
+                    Sources: {sel.sourceSubreddits.map(s=>"r/"+s).join(" · ")}
+                  </div>
+                )}
               </div>
               <button onClick={()=>setSel(null)} style={{background:"none",border:"none",color:C.dim,cursor:"pointer",fontSize:16,padding:4}}>✕</button>
             </div>
@@ -760,6 +827,14 @@ export default function App(){
 
         {/* ─── Sidebar ─── */}
         <div style={{background:C.surface,display:"flex",flexDirection:"column",overflow:"auto",transition:"background .3s"}}>
+
+          {/* GraphRAG Query */}
+          <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
+            <h3 style={{margin:"0 0 10px",fontSize:10,fontWeight:600,color:C.dim,letterSpacing:1.5,textTransform:"uppercase"}}>
+              🧠 ask the ontology
+            </h3>
+            <OntologyQueryPanel data={data} C={C} onSelectNode={selectById}/>
+          </div>
 
           {/* Trend */}
           <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
@@ -774,6 +849,16 @@ export default function App(){
               }
             </div>
           </div>
+
+          {/* Evidence & Lineage */}
+          {sel&&(
+            <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
+              <h3 style={{margin:"0 0 10px",fontSize:10,fontWeight:600,color:C.dim,letterSpacing:1.5,textTransform:"uppercase"}}>
+                🔍 evidence & lineage
+              </h3>
+              <EvidencePanel data={data} node={sel} C={C}/>
+            </div>
+          )}
 
           {/* Sentiment */}
           <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
@@ -814,6 +899,9 @@ export default function App(){
           </div>
         </div>
       </div>
+
+      {/* ─── Daily Social Signal Brief (modal) ─── */}
+      {showBrief && <DailyBriefing data={data} sub={sub} C={C} onClose={()=>setShowBrief(false)}/>}
     </div>
   );
 }
