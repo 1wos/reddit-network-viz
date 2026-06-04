@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  ontology:
+    name: build + ontology gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # 7 gates: 5 smokes + ontology lint (design + competency questions) + eval scorecard
+      - run: npm run test:ontology
+      - name: retriever ablation (informational)
+        run: npm run bench
+
+  services-syntax:
+    name: platform services syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: node worker syntax
+        run: for f in platform/worker/*.js; do node --check "$f"; done
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: fastapi syntax
+        run: python -m py_compile platform/api/main.py
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.22" }
+      - name: go vet exporter
+        run: cd platform/exporter && go vet ./... || true
+
+  helm:
+    name: helm chart lint/template
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint platform/helm/graphrag -f platform/helm/graphrag/values.yaml -f platform/helm/graphrag/values-prod.yaml
+      - name: render all envs
+        run: |
+          for env in dev stage prod; do
+            helm template gr platform/helm/graphrag -f platform/helm/graphrag/values.yaml -f platform/helm/graphrag/values-$env.yaml > /dev/null
+          done
