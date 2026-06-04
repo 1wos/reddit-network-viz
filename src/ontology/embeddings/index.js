@@ -27,3 +27,14 @@ export function buildVectorIndex(store, embedder = defaultEmbedder) {
 export function semanticSearch(index, query, k = 5, embedder = defaultEmbedder) {
   return index.search(embedder.embed(query), k);
 }
+
+/** Async index build for API/remote embedders (ApiEmbedder, MiniLM, Bedrock). */
+export async function buildVectorIndexAsync(store, embedder) {
+  const index = new VectorIndex();
+  for (const o of store.all()) {
+    if (!EMBEDDABLE.has(o.__type)) continue;
+    index.upsert(o.id, await embedder.embed(contextualText(store, o)), { label: o.label, type: o.__type });
+  }
+  return index;
+}
+

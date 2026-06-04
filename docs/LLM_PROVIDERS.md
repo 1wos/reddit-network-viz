@@ -28,6 +28,7 @@ LLM_PROVIDER=kimi   node scripts/llm-live.mjs "질문"     # 또는 claudecode /
 | **qwen** | free 체험 | `DASHSCOPE_API_KEY` | dashscope (Alibaba) | qwen-plus | ⬜ |
 | **doubao** (bytedance) | free 체험 | `ARK_API_KEY` | volcengine Ark | doubao-pro-32k | ⬜ (중국 리전) |
 | **claude** (anthropic) | 유료 | `ANTHROPIC_API_KEY` | console.anthropic.com | claude-sonnet-4-6 | ⬜ (SDK 필요) |
+| **kanana** (kakao) | CBT 신청 | `KANANA_API_KEY` | api-omni.kanana.ai (CBT) | kanana-1.5-o-9.8b | ⬜ 한국어 멀티모달, 형식 미확정(env 오버라이드) |
 
 각 프로바이더는 `<NAME>_BASE_URL` / `<NAME>_MODEL` 로 오버라이드 가능. (`src/ontology/llm/provider.js`의 `PROVIDERS` 맵)
 
