@@ -7,7 +7,7 @@
 import { buildUsFinanceDataset } from "../src/ontology/ingest/usFinanceDataset.js";
 import { createStore } from "../src/ontology/store/ontologyStore.js";
 import { answerWithGraphRAG, answerWithGraphRAGLLM } from "../src/ontology/engine/index.js";
-import { entityExtractionPrompt } from "../src/ontology/llm/prompts.js";
+import { entityExtractionPrompt, answerSynthesisPrompt, metaPrompt, PROMPT_TECHNIQUES } from "../src/ontology/llm/prompts.js";
 import { NullLLM } from "../src/ontology/llm/provider.js";
 
 let failed = 0;
@@ -34,13 +34,20 @@ ok(llm.synthesizedBy === "llm" && llm.summary === "FAKE-LLM grounded answer.", "
 
 // 4) Grounded prompt carries the anti-fabrication rules + evidence + supportStatus
 ok(/ONLY from the ontology evidence/.test(captured.system), "프롬프트: 근거 외 사용 금지 규칙 포함");
-ok(/support status is "supported"/.test(captured.system), "프롬프트: supportStatus 주입");
-ok(/evidence/.test(captured.user) && captured.user.includes("NVDA Earnings") === false ? true : true, "프롬프트: evidence 컨텍스트 포함");
-ok(captured.user.includes("\"supportStatus\""), "프롬프트(user): grounded JSON 컨텍스트");
+ok(/support_status is "supported"/.test(captured.system), "프롬프트: supportStatus 주입");
+ok(/<grounded_context>/.test(captured.user) && captured.user.includes('"supportStatus"'), "프롬프트(user): XML grounded_context + JSON");
+// Gemini practice: most-critical constraint placed LAST (<critical> near the end)
+ok(captured.system.lastIndexOf("<critical>") > captured.system.length * 0.5, "프롬프트: 핵심 제약(<critical>)을 끝에 배치");
 
-// 5) Extraction prompt constrains to the ontology contract
+// 5) Extraction prompt: XML structure + ontology-constrained + few-shot example
 const ext = entityExtractionPrompt("NVIDIA relies on TSMC for advanced chips.");
-ok(/Allowed object types: .*Organization/.test(ext.system) && /Allowed relationship types: .*IMPACTS/.test(ext.system), "추출 프롬프트: 온톨로지 타입/관계로 제약");
+ok(/<object_types>.*Organization/.test(ext.system) && /<relationship_types>.*IMPACTS/.test(ext.system), "추출 프롬프트: 온톨로지 타입/관계로 제약");
+ok(/<example>/.test(ext.system), "추출 프롬프트: few-shot 예시 포함");
+
+// 5b) Metaprompt (Anthropic) generates a task prompt; technique provenance recorded
+const mp = metaPrompt("classify a Reddit post's market sentiment", ["post"]);
+ok(/prompt engineer/i.test(mp.system) && /\{\{POST\}\}/.test(mp.user), "메타프롬프트: 변수 포함 프롬프트 생성기");
+ok(PROMPT_TECHNIQUES.length >= 5 && PROMPT_TECHNIQUES.every((t) => t.source), "프롬프트 기법 출처(provider) 기록됨");
 
 // 6) Unsupported question → prompt tells the LLM to refuse
 const weather = answerWithGraphRAG(store, "Why is the weather nice today?");

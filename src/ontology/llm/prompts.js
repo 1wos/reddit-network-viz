@@ -1,15 +1,18 @@
 /**
- * LLM — prompt templates (the Prompt-Engineering layer)
+ * LLM — prompt templates (Prompt-Engineering layer)
  *
- * Two grounded prompts that reuse the ontology contract:
- *  1) answerSynthesisPrompt — RAG *generation*: turn the engine's evidence
- *     bundle into a grounded answer, with hard rules that forbid fabrication and
- *     force the model to respect supportStatus / missing slots.
- *  2) entityExtractionPrompt — ingestion: extract typed entities + relations
- *     from raw text, constrained to the ontology (structured JSON output).
+ * Built on the official provider prompt guides, applied deliberately:
+ *  - Anthropic: XML-tag structure (<role>/<rules>/<grounded_context>) — Claude is
+ *    trained on XML and it yields more consistent output; + the metaprompt idea.
+ *    https://platform.claude.com/docs/en/build-with-claude/prompt-engineering
+ *    https://github.com/anthropics/anthropic-cookbook (misc/metaprompt.ipynb)
+ *  - OpenAI: clear instructions, "use reference text" (ground from provided
+ *    context), break tasks down, structured output.
+ *    https://developers.openai.com/api/docs/guides/prompt-engineering
+ *  - Google Gemini: JSON-schema structured output + put the MOST CRITICAL
+ *    constraint LAST. https://ai.google.dev/gemini-api/docs/prompting-strategies
  *
- * Prompts are deterministic functions of (question, bundle) / (text, contract)
- * so they are testable and versionable.
+ * Prompts are deterministic functions → testable & versionable.
  */
 
 import { OBJECT_TYPES } from "../types/objectTypes.js";
@@ -17,20 +20,39 @@ import { LINK_TYPES } from "../types/linkTypes.js";
 
 const concreteTypes = () => Object.keys(OBJECT_TYPES).filter((t) => !OBJECT_TYPES[t].abstract);
 
-/* ── 1) Grounded answer synthesis ── */
+/** Provenance: which technique came from which provider guide (for transparency/docs). */
+export const PROMPT_TECHNIQUES = [
+  { technique: "XML-tag sectioning", source: "Anthropic" },
+  { technique: "ground strictly from provided reference context", source: "OpenAI" },
+  { technique: "few-shot example", source: "OpenAI/Anthropic" },
+  { technique: "JSON-schema structured output", source: "Google Gemini / OpenAI" },
+  { technique: "most-critical constraint placed last", source: "Google Gemini" },
+  { technique: "metaprompt (generate a prompt from a task)", source: "Anthropic cookbook" },
+];
+
+/* ── 1) Grounded answer synthesis (RAG generation) ── */
 export function answerSynthesisPrompt(question, bundle) {
   const system = [
-    "You are a financial market-intelligence analyst. You answer ONLY from the ontology evidence provided — never from prior knowledge.",
-    "Hard rules:",
-    `- The retrieval support status is "${bundle.supportStatus}". If it is "unsupported", reply that the knowledge graph does not support an answer, and stop.`,
-    "- Use only the RELATED NODES and EVIDENCE below. Do not introduce entities or numbers that are not present.",
-    bundle.missingSlots?.length ? `- These required pieces are MISSING from the graph — name them as gaps: ${bundle.missingSlots.join(", ")}.` : "- State your confidence plainly.",
+    "<role>",
+    "You are a financial market-intelligence analyst. Answer ONLY from the ontology evidence provided — never from prior knowledge or training data.",
+    "</role>",
+    "",
+    "<rules>",
+    "- Use only the entities and posts inside <grounded_context>. Do not introduce any entity, number, or claim not present there.",
     "- Cite supporting posts by their title in parentheses.",
-    "- Be concise: 3–5 sentences. No preamble.",
+    bundle.missingSlots?.length
+      ? `- These required pieces are MISSING from the graph — name them as coverage gaps: ${bundle.missingSlots.join(", ")}.`
+      : "- State your confidence plainly at the end.",
+    "- Be concise: 3–5 sentences, no preamble.",
+    "</rules>",
+    "",
+    // Gemini guidance: most-critical constraint LAST.
+    "<critical>",
+    `The retrieval support_status is "${bundle.supportStatus}". If it is "unsupported", reply that the knowledge graph does not support an answer, and stop. Never fabricate to fill a gap.`,
+    "</critical>",
   ].join("\n");
 
   const ctx = {
-    question,
     intent: bundle.intent?.label,
     anchors: bundle.anchors?.map((a) => a.label),
     relatedNodes: bundle.relatedNodes?.map((n) => ({ label: n.label, type: n.type, relation: n.via })),
@@ -39,25 +61,50 @@ export function answerSynthesisPrompt(question, bundle) {
     missingSlots: bundle.missingSlots,
     supportStatus: bundle.supportStatus,
   };
-  const user = `Answer the question using only this grounded context:\n\n${JSON.stringify(ctx, null, 2)}`;
+  const user = `<grounded_context>\n${JSON.stringify(ctx, null, 2)}\n</grounded_context>\n\n<question>${question}</question>`;
   return { system, user };
 }
 
-/* ── 2) Ontology-constrained entity/relation extraction ── */
+/* ── 2) Ontology-constrained entity/relation extraction (structured output) ── */
 export function entityExtractionPrompt(text) {
   const types = concreteTypes();
   const rels = Object.keys(LINK_TYPES);
   const system = [
-    "You extract a typed knowledge graph from text, conforming to a fixed ontology.",
-    `Allowed object types: ${types.join(", ")}.`,
-    `Allowed relationship types: ${rels.join(", ")}.`,
-    "Rules:",
+    "<task>Extract a typed knowledge graph from the text, conforming to a fixed ontology.</task>",
+    "",
+    "<ontology>",
+    `  <object_types>${types.join(", ")}</object_types>`,
+    `  <relationship_types>${rels.join(", ")}</relationship_types>`,
+    "</ontology>",
+    "",
+    "<example>",
+    "  <input>NVIDIA relies on TSMC for advanced chips.</input>",
+    '  <output>{"objects":[{"id":"nvidia","label":"NVIDIA","type":"Organization"},{"id":"tsmc","label":"TSMC","type":"Organization"}],"links":[{"source":"tsmc","target":"nvidia","type":"IMPACTS","polarity":"positive"}]}</output>',
+    "</example>",
+    "",
+    "<rules>",
     "- Only emit entities/relations explicitly supported by the text.",
-    "- Each object: { id (snake_case), label, type (one of the allowed types), shortSummary }.",
-    "- Each link: { source (id), target (id), type (one of the allowed relations), polarity? }.",
-    "- Return STRICT JSON: { \"objects\": [...], \"links\": [...] }. No prose.",
+    "- object: { id (snake_case), label, type (must be an allowed object type), shortSummary }",
+    "- link: { source (id), target (id), type (must be an allowed relationship type), polarity? }",
+    '- Return STRICT JSON only: { "objects": [...], "links": [...] }. No prose, no markdown.',
+    "</rules>",
   ].join("\n");
-  const user = `TEXT:\n${text}`;
+  return { system, user: `<text>\n${text}\n</text>` };
+}
+
+/* ── 3) Metaprompt (Anthropic cookbook) — generate a task prompt from a description ── */
+export function metaPrompt(taskDescription, variables = []) {
+  const vars = variables.length ? variables.map((v) => `{{${v.toUpperCase()}}}`).join(", ") : "(none)";
+  const system = [
+    "<role>You are a prompt engineer. Write a high-quality prompt for the task below.</role>",
+    "<guidelines>",
+    "- Structure the prompt with XML tags (<task>, <context>, <instructions>, <output_format>).",
+    "- Demarcate input variables with double curly braces so they are unambiguous.",
+    "- Put the single most critical constraint last.",
+    "- Output ONLY the prompt text.",
+    "</guidelines>",
+  ].join("\n");
+  const user = `<task_description>${taskDescription}</task_description>\n<variables>${vars}</variables>`;
   return { system, user };
 }
 
