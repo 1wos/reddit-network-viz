@@ -10,8 +10,10 @@
     "mcp": "node mcp/server.js",
     "eval": "node scripts/eval.mjs",
     "bench": "node scripts/bench-retrieval.mjs",
+    "lint:ontology": "node scripts/ontology-lint.mjs",
+    "profile": "node scripts/control-plane.mjs",
     "llm:live": "node scripts/llm-live.mjs",
-    "test:ontology": "node scripts/ontology-smoke.mjs && node scripts/ontology-engine-smoke.mjs && node scripts/embeddings-smoke.mjs && node scripts/llm-smoke.mjs && node scripts/mcp-smoke.mjs && node scripts/eval.mjs"
+    "test:ontology": "node scripts/ontology-smoke.mjs && node scripts/ontology-engine-smoke.mjs && node scripts/embeddings-smoke.mjs && node scripts/llm-smoke.mjs && node scripts/mcp-smoke.mjs && node scripts/ontology-lint.mjs && node scripts/eval.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

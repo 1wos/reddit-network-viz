@@ -156,7 +156,7 @@ const FINANCE_EDGES = [
   E("federal_reserve", "interest_rates", "IMPACTS", 0.95, "positive"),
   E("federal_reserve", "fomc_decision", "RELATED_TO_EVENT", 0.95),
   E("jerome_powell", "federal_reserve", "CO_OCCURS_WITH", 0.82),
-  E("jerome_powell", "fomc_decision", "DISCUSSED_IN", 0.78),
+  E("jerome_powell", "fomc_decision", "RELATED_TO_EVENT", 0.78),
   E("interest_rates", "inflation", "IMPACTS", 0.85, "negative"),
   E("inflation", "interest_rates", "IMPACTS", 0.8, "positive"),
   E("interest_rates", "treasury_yields", "IMPACTS", 0.86, "positive"),
