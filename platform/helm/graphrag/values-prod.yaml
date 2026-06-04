@@ -1,0 +1,20 @@
+# prod — managed redis (different URL!), tighter limits, DIFFERENT ingress path.
+# These deltas are the classic dev↔prod env-diff bugs to debug:
+#   - redis.url points at a managed endpoint (secret/DNS must exist)
+#   - ingress.path is /graphrag/api (NOT /api) → broken links if client hardcodes /api
+#   - resources are tighter → OOMKill if worker batch too large
+image: { tag: v1.0.0 }
+redis: { url: redis://graphrag-redis.prod-cache.amazonaws.com:6379 }
+otel: { endpoint: http://tempo.observability:4318 }
+secrets: { llmSecretName: graphrag-llm-prod }
+api:
+  replicas: 3
+  ingress: { enabled: true, path: /graphrag/api }
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: 500m, memory: 384Mi }
+worker:
+  replicas: 4
+  resources:
+    requests: { cpu: 250m, memory: 384Mi }
+    limits: { cpu: "1", memory: 512Mi }

@@ -1,0 +1,8 @@
+# stage — closer to prod; 2 replicas, staging redis
+image: { tag: stage }
+redis: { url: redis://redis-staging.svc:6379 }
+otel: { endpoint: http://tempo.observability:4318 }
+api:
+  replicas: 2
+  ingress: { enabled: true, path: /api }
+worker: { replicas: 2 }

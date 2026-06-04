@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-worker
+  labels:
+    app.kubernetes.io/name: graphrag-worker
+    {{- include "graphrag.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  selector:
+    matchLabels: { app.kubernetes.io/name: graphrag-worker, app.kubernetes.io/instance: {{ .Release.Name }} }
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: graphrag-worker
+        {{- include "graphrag.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: worker
+          image: "{{ .Values.image.registry }}/graphrag-worker:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- include "graphrag.commonEnv" . | nindent 12 }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "{{ .Values.otel.endpoint }}/v1/traces"
+            - name: OTEL_SERVICE_NAME
+              value: graphrag-worker
+          envFrom:
+            - secretRef: { name: {{ .Values.secrets.llmSecretName }}, optional: true }
+          resources: {{- toYaml .Values.worker.resources | nindent 12 }}

@@ -1,0 +1,41 @@
+# ArgoCD GitOps — declaratively syncs the Helm chart to the cluster.
+# One Application per environment (prod shown); dev/stage swap valueFiles + namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: graphrag-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/1wos/reddit-network-viz.git
+    targetRevision: main
+    path: platform/helm/graphrag
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: graphrag-prod
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: graphrag-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/1wos/reddit-network-viz.git
+    targetRevision: main
+    path: platform/helm/graphrag
+    helm:
+      valueFiles: [values.yaml, values-dev.yaml]
+  destination: { server: https://kubernetes.default.svc, namespace: graphrag-dev }
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true]

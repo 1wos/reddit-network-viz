@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-exporter
+  labels:
+    app.kubernetes.io/name: graphrag-exporter
+    {{- include "graphrag.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.exporter.replicas }}
+  selector:
+    matchLabels: { app.kubernetes.io/name: graphrag-exporter, app.kubernetes.io/instance: {{ .Release.Name }} }
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: graphrag-exporter
+        {{- include "graphrag.labels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.exporter.port }}"
+    spec:
+      containers:
+        - name: exporter
+          image: "{{ .Values.image.registry }}/graphrag-exporter:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports: [{ containerPort: {{ .Values.exporter.port }} }]
+          env:
+            - name: REDIS_URL
+              value: {{ .Values.redis.url | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-exporter
+  labels: { app.kubernetes.io/name: graphrag-exporter }
+spec:
+  selector: { app.kubernetes.io/name: graphrag-exporter, app.kubernetes.io/instance: {{ .Release.Name }} }
+  ports: [{ name: metrics, port: {{ .Values.exporter.port }}, targetPort: {{ .Values.exporter.port }} }]

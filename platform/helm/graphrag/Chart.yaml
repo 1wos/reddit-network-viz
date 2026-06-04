@@ -1,0 +1,6 @@
+apiVersion: v2
+name: graphrag
+description: Polyglot GraphRAG platform — FastAPI API + Node worker + Go exporter
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

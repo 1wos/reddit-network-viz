@@ -1,0 +1,37 @@
+# Base values — overridden per environment by values-{dev,stage,prod}.yaml
+image:
+  registry: ghcr.io/1wos
+  tag: latest
+  pullPolicy: IfNotPresent
+
+redis:
+  url: redis://redis:6379
+
+otel:
+  endpoint: http://jaeger-collector:4318
+
+# k8s Secret holding provider API keys, mounted as env into api/worker.
+# (Intentional env-diff class of bug: if this Secret is absent in an env,
+#  pods CrashLoop on missing keys — see platform/README.md scenario #1.)
+secrets:
+  llmSecretName: graphrag-llm
+
+api:
+  replicas: 1
+  port: 8000
+  ingress:
+    enabled: false
+    path: /api
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { cpu: 250m, memory: 256Mi }
+
+worker:
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+
+exporter:
+  replicas: 1
+  port: 9100
