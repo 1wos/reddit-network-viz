@@ -3,6 +3,16 @@ dist/
 .claude/
 frames/
 
+# python
+__pycache__/
+*.pyc
+
+# IaC
+infra/cdk/cdk.out/
+infra/**/.terraform/
+*.tfstate
+*.tfstate.*
+
 .DS_Store
 ._.DS_Store
 **/.DS_Store

@@ -6,13 +6,19 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mcp": "node mcp/server.js",
+    "eval": "node scripts/eval.mjs",
+    "llm:live": "node scripts/llm-live.mjs",
+    "test:ontology": "node scripts/ontology-smoke.mjs && node scripts/ontology-engine-smoke.mjs && node scripts/embeddings-smoke.mjs && node scripts/llm-smoke.mjs && node scripts/mcp-smoke.mjs && node scripts/eval.mjs"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "chart.js": "^4.4.0",
     "d3": "^7.9.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.0",
