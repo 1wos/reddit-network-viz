@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "mcp": "node mcp/server.js",
     "eval": "node scripts/eval.mjs",
+    "bench": "node scripts/bench-retrieval.mjs",
     "llm:live": "node scripts/llm-live.mjs",
     "test:ontology": "node scripts/ontology-smoke.mjs && node scripts/ontology-engine-smoke.mjs && node scripts/embeddings-smoke.mjs && node scripts/llm-smoke.mjs && node scripts/mcp-smoke.mjs && node scripts/eval.mjs"
   },

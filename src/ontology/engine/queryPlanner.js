@@ -44,8 +44,9 @@ function resolveAnchors(store, question, intent, opts = {}) {
   if (matches.length) return { anchors: matches.map((m) => m.o), grounded: true, via: "lexical" };
 
   // Semantic fallback: vector search over contextual embeddings (hybrid retrieval).
-  if (opts.index) {
-    const hits = semanticSearch(opts.index, question, 4, opts.embedder).filter((h) => h.score >= SEMANTIC_THRESHOLD);
+  if (opts.index && opts.lexicalOnly !== true) {
+    const threshold = opts.semanticThreshold ?? SEMANTIC_THRESHOLD;
+    const hits = semanticSearch(opts.index, question, 4, opts.embedder).filter((h) => h.score >= threshold);
     if (hits.length) {
       const anchors = hits.map((h) => store.get(h.id)).filter(Boolean);
       if (anchors.length) return { anchors, grounded: true, via: "semantic" };
