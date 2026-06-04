@@ -30,7 +30,9 @@ function resolveAnchors(store, question, intent, opts = {}) {
     if (!o.label) continue; // skip Author/Subreddit noise
     let idx = q.indexOf(o.label.toLowerCase());
     if (idx < 0) {
-      const words = [o.label, o.id, o.ticker].filter(Boolean).join(" ").toLowerCase().split(/[\s_]+/);
+      // label + ticker only (NOT id), and keep hyphenated terms intact ("rate-cut"
+      // must not split into "rate") — both were sources of false anchor hits.
+      const words = [o.label, o.ticker].filter(Boolean).join(" ").toLowerCase().split(/[\s_]+/);
       for (const w of words) {
         if (w.length <= 3) continue; // skip short, ambiguous tokens
         const re = new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`); // word-boundary, not substring
@@ -40,8 +42,18 @@ function resolveAnchors(store, question, intent, opts = {}) {
     }
     if (idx >= 0) matches.push({ o, idx });
   }
+  const lexicalHit = matches.length > 0;
+
+  // Vocabulary/alias resolution: "the Fed" → federal_reserve, "team green" → nvidia.
+  if (opts.vocab) {
+    for (const h of opts.vocab.resolve(question)) {
+      const o = store.get(h.id);
+      if (o && o.label && !matches.some((m) => m.o.id === o.id)) matches.push({ o, idx: h.idx });
+    }
+  }
+
   matches.sort((a, b) => a.idx - b.idx || (b.o.frequency || 0) - (a.o.frequency || 0));
-  if (matches.length) return { anchors: matches.map((m) => m.o), grounded: true, via: "lexical" };
+  if (matches.length) return { anchors: matches.map((m) => m.o), grounded: true, via: lexicalHit ? "lexical" : "alias" };
 
   // Semantic fallback: vector search over contextual embeddings (hybrid retrieval).
   if (opts.index && opts.lexicalOnly !== true) {

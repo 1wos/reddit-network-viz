@@ -32,6 +32,11 @@ export const GOLDEN_SET = [
   { q: "How do interest rates affect Bitcoin?", intent: "impact_path", anchors: ["interest_rates", "bitcoin"], pathEnds: ["interest_rates", "bitcoin"], support: "partial" },
   { q: "How does TSMC affect NVIDIA?", intent: "impact_path", anchors: ["tsmc", "nvidia"], pathEnds: ["tsmc", "nvidia"], support: "partial" },
 
+  // ── vocabulary/alias resolution (no exact label — only aliases) ──
+  { q: "Why is the Fed dominating the discussion?", intent: "why_trending", anchors: ["federal_reserve"], relatedAny: ["interest_rates", "fomc_decision"], support: "supported" },
+  { q: "How do rate hikes affect digital gold?", intent: "impact_path", anchors: ["interest_rates", "bitcoin"], pathEnds: ["interest_rates", "bitcoin"], support: "partial" },
+  { q: "Which companies are connected to the compute buildout?", intent: "connected_orgs", anchors: ["ai_datacenter"], relatedAny: ["nvidia", "openai", "microsoft"], support: "supported" },
+
   // ── adversarial (no anchor → must NOT fabricate) ──
   { q: "What is the best pizza topping?", intent: null, anchors: [], support: "unsupported", adversarial: true },
   { q: "How tall is Mount Everest?", intent: null, anchors: [], support: "unsupported", adversarial: true },

@@ -12,6 +12,7 @@ import { planQuery } from "./queryPlanner.js";
 import { buildBundle } from "./evidenceBundle.js";
 import { buildVectorIndex, semanticSearch, defaultEmbedder } from "../embeddings/index.js";
 import { answerSynthesisPrompt } from "../llm/prompts.js";
+import { defaultVocab } from "../vocab.js";
 
 export { buildOntologyContext, planQuery, buildBundle, buildVectorIndex, semanticSearch, defaultEmbedder };
 
@@ -22,7 +23,7 @@ export { buildOntologyContext, planQuery, buildBundle, buildVectorIndex, semanti
  */
 export function answerWithGraphRAG(store, question, opts = {}) {
   const context = buildOntologyContext(store);
-  const plan = planQuery(store, question, opts);
+  const plan = planQuery(store, question, { vocab: defaultVocab, ...opts });
   const bundle = buildBundle(store, plan, context);
   return { question, ...bundle, retrieval: plan.retrieval, context: { hash: context.hash, objectCounts: context.objectCounts } };
 }
