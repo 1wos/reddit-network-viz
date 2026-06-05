@@ -1,0 +1,7 @@
+# Loads dashboard JSON from this directory at startup.
+apiVersion: 1
+providers:
+  - name: graphrag
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards

@@ -1,0 +1,21 @@
+# Auto-provisioned datasources so Grafana boots ready to query traces, logs and
+# metrics. Tempo↔Loki are wired by trace_id for one-click trace→logs pivots.
+apiVersion: 1
+datasources:
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    url: http://tempo:3200
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        filterByTraceID: true
+  - name: Loki
+    uid: loki
+    type: loki
+    url: http://loki:3100
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    url: http://prometheus:9090
+    isDefault: true

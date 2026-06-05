@@ -34,10 +34,25 @@ curl localhost:8000/queue/depth
 - **idempotency key** — completed keys deduped so re-submits are no-ops
 - **reprocess CLI** — `node platform/worker/reprocess.js --drain` re-enqueues the DLQ
 
-## Distributed tracing
-FastAPI injects a W3C `traceparent` into the job; the worker `propagation.extract`s
-it and continues the span → **one trace spans API → queue → worker** in Jaeger.
-"Which job failed and why" is answerable from the trace + structured error logs.
+## Observability (traces · logs · metrics)
+The compose stack ships a full Grafana observability suite, pre-provisioned:
+
+- **Tempo** — distributed traces (OTLP). FastAPI injects a W3C `traceparent` into
+  each job; the worker extracts it and continues the span, so **one trace spans
+  API → queue → worker**.
+- **Loki + Promtail** — the worker emits structured JSON logs (`level`, `job`,
+  `id`, `error`); Promtail ships them to Loki, queryable in Grafana.
+- **Prometheus** — scrapes the Go exporter's queue-depth / DLQ gauges.
+- **Grafana** (`:3000`) — datasources wired with Tempo→Loki correlation; a
+  "GraphRAG Platform" dashboard shows queue depth, DLQ, Redis health and worker
+  error logs.
+
+### Debugging "which job failed and why"
+1. Grafana → dashboard: DLQ panel turns red → something is dead-lettering.
+2. Worker-error-logs panel → find the failing `job.id` and error message.
+3. Tempo → search the trace by id → see the API enqueue span and each retry
+   attempt with its exception, end to end.
+4. Fix, then `node platform/worker/reprocess.js --drain` to replay the DLQ.
 
 ## Failure scenarios (intentional, to debug)
 
@@ -49,7 +64,8 @@ it and continues the span → **one trace spans API → queue → worker** in Ja
 3. **Endpoint diff** — `OTEL_EXPORTER_OTLP_ENDPOINT` correct in dev but wrong in
    prod values → traces vanish in prod only; fix = align Helm `values-prod.yaml`.
 
-## Roadmap (this layer)
-- **P1 (done):** FastAPI + Redis queue (retry/backoff/DLQ/idempotency) + Node worker + OTel trace propagation + Go exporter + compose.
-- **P2:** Helm chart + `values-{dev,stage,prod}.yaml` + ArgoCD `Application` (GitOps).
-- **P3:** Grafana/Tempo/Loki dashboards; capture the 3 failure scenarios with screenshots.
+## What's included
+- FastAPI gateway + Redis queue (retry, exponential backoff, dead-letter, idempotency) + Node worker reusing the engine, with OTel trace propagation and a reprocess CLI.
+- Go metrics exporter (queue-depth / DLQ gauges) and a docker-compose stack.
+- Kubernetes deploy: Helm chart with `values-{dev,stage,prod}.yaml` and ArgoCD `Application`s (GitOps).
+- Full observability: Grafana + Tempo + Loki + Prometheus, pre-provisioned datasources and a dashboard, with trace→logs correlation for failure triage.
