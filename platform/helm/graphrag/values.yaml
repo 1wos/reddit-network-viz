@@ -6,6 +6,7 @@ image:
 
 redis:
   url: redis://redis:6379
+  deploy: true # in-cluster redis (set false in prod to use a managed endpoint)
 
 otel:
   endpoint: http://jaeger-collector:4318

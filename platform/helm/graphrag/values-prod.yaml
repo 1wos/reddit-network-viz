@@ -4,7 +4,7 @@
 #   - ingress.path is /graphrag/api (NOT /api) → broken links if client hardcodes /api
 #   - resources are tighter → OOMKill if worker batch too large
 image: { tag: v1.0.0 }
-redis: { url: redis://graphrag-redis.prod-cache.amazonaws.com:6379 }
+redis: { url: redis://graphrag-redis.prod-cache.amazonaws.com:6379, deploy: false }
 otel: { endpoint: http://tempo.observability:4318 }
 secrets: { llmSecretName: graphrag-llm-prod }
 api:
