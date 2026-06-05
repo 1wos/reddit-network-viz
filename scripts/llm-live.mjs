@@ -36,7 +36,7 @@ if (provider === "claudecode" || provider === "claude-code") {
   llm = makeLLM(provider);
 }
 if (!llm.available) {
-  console.log(`\n[LLM:${provider}] 키 미설정 — deterministic만 실행됨.`);
+  console.log(`\n[LLM:${provider}] no key — deterministic only.`);
   process.exit(0);
 }
 const a = await answerWithGraphRAGLLM(store, Q, { index, llm });
@@ -44,5 +44,5 @@ if (a.synthesizedBy === "llm") {
   console.log(`\n[${provider.toUpperCase()} · ${llm.model}]  (synthesized from the grounded bundle)`);
   console.log(a.summary);
 } else {
-  console.log(`\n[${provider}] 실패: ${a.llmError?.slice(0, 200)}`);
+  console.log(`\n[${provider}] failed: ${a.llmError?.slice(0, 200)}`);
 }

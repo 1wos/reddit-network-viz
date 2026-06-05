@@ -8,7 +8,7 @@ let failed = 0;
 const ok = (c, m) => { console.log(`${c ? "✅" : "❌"} ${m}`); if (!c) failed++; };
 
 const t = createOntologyTools();
-ok(t.names().length === 7, `툴 7종 노출: ${t.names().join(", ")}`);
+ok(t.names().length === 7, `7 tools exposed: ${t.names().join(", ")}`);
 
 const sem = t.call("ontology_semantic_search", { query: "chip supply chain for AI", k: 3 });
 ok(Array.isArray(sem) && sem.length === 3 && sem[0].score != null, `semantic_search: ${sem.map((s) => s.id).join(", ")}`);
@@ -28,12 +28,12 @@ ok(nb.neighbors.length > 0, `neighbors(nvidia): ${nb.neighbors.length}`);
 const a1 = t.call("ontology_action", { action: "acknowledgeSignal", params: { signalId: "recession_risk" } });
 ok(a1.ok, `action acknowledgeSignal → ok=${a1.ok}`);
 const a2 = t.call("ontology_action", { action: "acknowledgeSignal", params: { signalId: "recession_risk" } });
-ok(!a2.ok, `재처리 거부 → ok=${a2.ok} (${a2.error})`);
+ok(!a2.ok, `re-process rejected → ok=${a2.ok} (${a2.error})`);
 const a3 = t.call("ontology_action", { action: "createWatchlist", params: { name: "AI Capex" } });
 ok(a3.ok, `action createWatchlist → ${a3.result}`);
 
 const brief = t.call("ontology_briefing");
 ok(brief.bullets?.length >= 3, `briefing: ${brief.bullets?.length} bullets, top=${brief.topTrending?.label}`);
 
-console.log(failed ? `\n❌ ${failed} 실패` : "\n✅ ALL GREEN — MCP 툴 7종 (structured context protocol) 통과");
+console.log(failed ? `\n❌ ${failed} failed` : "\n✅ ALL GREEN — 7 MCP tools (structured context protocol)");
 process.exit(failed ? 1 : 0);

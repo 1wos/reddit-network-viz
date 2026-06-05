@@ -22,36 +22,36 @@ const fakeLLM = { get available() { return true; }, async generate({ system, use
 
 // 1) No LLM → deterministic
 const det = await answerWithGraphRAGLLM(store, Q, {});
-ok(det.synthesizedBy === "deterministic", "LLM 없음 → 결정론 합성");
+ok(det.synthesizedBy === "deterministic", "no LLM → deterministic synthesis");
 
 // 2) NullLLM (available=false) → deterministic
 const nl = await answerWithGraphRAGLLM(store, Q, { llm: new NullLLM() });
-ok(nl.synthesizedBy === "deterministic", "NullLLM → 결정론 폴백");
+ok(nl.synthesizedBy === "deterministic", "NullLLM → deterministic fallback");
 
 // 3) FakeLLM → LLM synthesizes, summary replaced
 const llm = await answerWithGraphRAGLLM(store, Q, { llm: fakeLLM });
-ok(llm.synthesizedBy === "llm" && llm.summary === "FAKE-LLM grounded answer.", "LLM 가용 → LLM 합성으로 교체");
+ok(llm.synthesizedBy === "llm" && llm.summary === "FAKE-LLM grounded answer.", "LLM available → synthesized by LLM");
 
 // 4) Grounded prompt carries the anti-fabrication rules + evidence + supportStatus
-ok(/ONLY from the ontology evidence/.test(captured.system), "프롬프트: 근거 외 사용 금지 규칙 포함");
-ok(/support_status is "supported"/.test(captured.system), "프롬프트: supportStatus 주입");
-ok(/<grounded_context>/.test(captured.user) && captured.user.includes('"supportStatus"'), "프롬프트(user): XML grounded_context + JSON");
+ok(/ONLY from the ontology evidence/.test(captured.system), "prompt: includes the no-fabrication rule");
+ok(/support_status is "supported"/.test(captured.system), "prompt: supportStatus injected");
+ok(/<grounded_context>/.test(captured.user) && captured.user.includes('"supportStatus"'), "prompt (user): XML grounded_context + JSON");
 // Gemini practice: most-critical constraint placed LAST (<critical> near the end)
-ok(captured.system.lastIndexOf("<critical>") > captured.system.length * 0.5, "프롬프트: 핵심 제약(<critical>)을 끝에 배치");
+ok(captured.system.lastIndexOf("<critical>") > captured.system.length * 0.5, "prompt: critical constraint (<critical>) placed last");
 
 // 5) Extraction prompt: XML structure + ontology-constrained + few-shot example
 const ext = entityExtractionPrompt("NVIDIA relies on TSMC for advanced chips.");
-ok(/<object_types>.*Organization/.test(ext.system) && /<relationship_types>.*IMPACTS/.test(ext.system), "추출 프롬프트: 온톨로지 타입/관계로 제약");
-ok(/<example>/.test(ext.system), "추출 프롬프트: few-shot 예시 포함");
+ok(/<object_types>.*Organization/.test(ext.system) && /<relationship_types>.*IMPACTS/.test(ext.system), "extraction prompt: constrained to ontology types/relations");
+ok(/<example>/.test(ext.system), "extraction prompt: includes a few-shot example");
 
 // 5b) Metaprompt (Anthropic) generates a task prompt; technique provenance recorded
 const mp = metaPrompt("classify a Reddit post's market sentiment", ["post"]);
-ok(/prompt engineer/i.test(mp.system) && /\{\{POST\}\}/.test(mp.user), "메타프롬프트: 변수 포함 프롬프트 생성기");
-ok(PROMPT_TECHNIQUES.length >= 5 && PROMPT_TECHNIQUES.every((t) => t.source), "프롬프트 기법 출처(provider) 기록됨");
+ok(/prompt engineer/i.test(mp.system) && /\{\{POST\}\}/.test(mp.user), "metaprompt: generates a prompt with variables");
+ok(PROMPT_TECHNIQUES.length >= 5 && PROMPT_TECHNIQUES.every((t) => t.source), "prompt techniques record their provider source");
 
 // 6) Unsupported question → prompt tells the LLM to refuse
 const weather = answerWithGraphRAG(store, "Why is the weather nice today?");
-ok(weather.supportStatus === "unsupported", "근거 없는 질문 → unsupported (LLM에 거부 지시됨)");
+ok(weather.supportStatus === "unsupported", "no-evidence question → unsupported (LLM told to refuse)");
 
-console.log(failed ? `\n❌ ${failed} 실패` : "\n✅ ALL GREEN — LLM 경로 (grounded prompt + 결정론↔LLM 토글) 통과");
+console.log(failed ? `\n❌ ${failed} failed` : "\n✅ ALL GREEN — LLM path (grounded prompt + deterministic↔LLM toggle)");
 process.exit(failed ? 1 : 0);

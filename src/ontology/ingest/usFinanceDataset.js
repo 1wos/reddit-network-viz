@@ -6,8 +6,8 @@
  * source objects (RedditPost / Author / Subreddit) + lineage links
  * (POSTED_IN / AUTHORED_BY / MENTIONS / EVIDENCED_BY) that the raw graph implied.
  *
- * This is the "backing dataset" for Phase 1 — later swappable for SEC EDGAR /
- * price API / live Reddit connectors that emit the same instance shape.
+ * This is the canonical "backing dataset" — swappable for SEC EDGAR / price API
+ * / live Reddit connectors that emit the same instance shape.
  */
 
 import { getFinanceOntology } from "../mockOntologyData.js";

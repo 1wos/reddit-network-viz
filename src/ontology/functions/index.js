@@ -68,6 +68,6 @@ export const FUNCTIONS = {
 /** Run a named function for an object via the registry. */
 export function runFunction(obj, fnName, store) {
   const fn = FUNCTIONS[obj.__type]?.[fnName];
-  if (!fn) throw new Error(`${obj.__type}에 함수 ${fnName} 없음`);
+  if (!fn) throw new Error(`no function ${fnName} on ${obj.__type}`);
   return fn(obj, store);
 }

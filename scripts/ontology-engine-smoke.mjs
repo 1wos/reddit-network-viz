@@ -30,26 +30,26 @@ for (const q of ENGINE_QUESTIONS) {
   console.log(`   » ${a.summary}`);
 
   ok(a.intent.id === expectIntent[q], `intent = ${expectIntent[q]}`);
-  ok(["supported", "partial", "unsupported"].includes(a.supportStatus), "supportStatus 유효");
-  ok(a.relatedNodes.length > 0 || a.path, "관련 노드/경로 채워짐");
-  ok(typeof a.context.hash === "string", "ontology context 해시 동반");
+  ok(["supported", "partial", "unsupported"].includes(a.supportStatus), "supportStatus valid");
+  ok(a.relatedNodes.length > 0 || a.path, "related nodes/path populated");
+  ok(typeof a.context.hash === "string", "ontology context hash attached");
 }
 
 // Targeted checks
 const why = answerWithGraphRAG(store, "Why is NVIDIA trending across finance and technology communities?");
-ok(why.anchors[0].id === "nvidia", "앵커 해소 = nvidia");
-ok(why.supportStatus === "supported" && why.evidence.length > 0, "why_trending = supported (근거 동반)");
+ok(why.anchors[0].id === "nvidia", "anchor resolution = nvidia");
+ok(why.supportStatus === "supported" && why.evidence.length > 0, "why_trending = supported (with evidence)");
 
 const neg = answerWithGraphRAG(store, "Which topics are causing negative sentiment around Bitcoin?");
-ok(neg.slots.bearish_impacts?.every((n) => n.props?.polarity === "negative"), "negative_drivers = polarity=negative 링크만");
+ok(neg.slots.bearish_impacts?.every((n) => n.props?.polarity === "negative"), "negative_drivers = polarity=negative links only");
 
 const path = answerWithGraphRAG(store, "How do interest rates affect Bitcoin?");
 ok(path.path && path.path[0].id === "interest_rates" && path.path.at(-1).id === "bitcoin",
-  `impact_path 경로: ${path.path?.map((s) => s.id).join(" → ")}`);
+  `impact_path route: ${path.path?.map((s) => s.id).join(" → ")}`);
 
 // Unsupported honesty: a question with no graph anchor should degrade, not fabricate
 const none = answerWithGraphRAG(store, "Why is the weather nice today?");
-ok(["partial", "unsupported"].includes(none.supportStatus), `근거 없는 질문 → support=${none.supportStatus} (날조 안 함)`);
+ok(["partial", "unsupported"].includes(none.supportStatus), `no-evidence question → support=${none.supportStatus} (no fabrication)`);
 
-console.log(failed ? `\n❌ ${failed} 실패` : "\n✅ ALL GREEN — GraphRAG 엔진 (intent→slot→subgraph→evidence→grounded+support) 통과");
+console.log(failed ? `\n❌ ${failed} failed` : "\n✅ ALL GREEN — GraphRAG engine (intent→slot→subgraph→evidence→grounded+support)");
 process.exit(failed ? 1 : 0);

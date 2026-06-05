@@ -21,18 +21,18 @@ const hasLS = () => {
 /* ── Single property validator ── */
 function checkProp(value, d) {
   switch (d.type) {
-    case "int": if (!Number.isInteger(value)) return "정수 아님"; break;
-    case "double": if (typeof value !== "number" || Number.isNaN(value)) return "숫자 아님"; break;
-    case "bool": if (typeof value !== "boolean") return "불리언 아님"; break;
-    case "string": case "ref": if (typeof value !== "string") return "문자열 아님"; break;
-    case "timestamp": if (typeof value !== "number") return "타임스탬프(숫자) 아님"; break;
-    case "enum": if (!d.enum.includes(value)) return `enum 위반 (${value})`; break;
-    case "array": if (!Array.isArray(value)) return "배열 아님"; break;
+    case "int": if (!Number.isInteger(value)) return "expected integer"; break;
+    case "double": if (typeof value !== "number" || Number.isNaN(value)) return "expected number"; break;
+    case "bool": if (typeof value !== "boolean") return "expected boolean"; break;
+    case "string": case "ref": if (typeof value !== "string") return "expected string"; break;
+    case "timestamp": if (typeof value !== "number") return "expected timestamp (number)"; break;
+    case "enum": if (!d.enum.includes(value)) return `enum violation (${value})`; break;
+    case "array": if (!Array.isArray(value)) return "expected array"; break;
     default: break;
   }
   if (d.range && typeof value === "number") {
     const [lo, hi] = d.range;
-    if (value < lo || value > hi) return `범위 위반 [${lo},${hi}] (${value})`;
+    if (value < lo || value > hi) return `out of range [${lo},${hi}] (${value})`;
   }
   return null;
 }
@@ -101,11 +101,11 @@ export function createStore(dataset, opts = {}) {
     },
     patch(id, partial) {
       const cur = byId.get(id);
-      if (!cur) throw new Error(`patch: 없는 객체 ${id}`);
+      if (!cur) throw new Error(`patch: unknown object ${id}`);
       byId.set(id, { ...cur, ...partial });
     },
     addLink(type, source, target, props = {}) {
-      if (!linkTypes[type]) throw new Error(`addLink: 모르는 링크타입 ${type}`);
+      if (!linkTypes[type]) throw new Error(`addLink: unknown link type ${type}`);
       links.push({ id: `l${linkSeq++}`, type, source, target, props });
     },
 
@@ -114,10 +114,10 @@ export function createStore(dataset, opts = {}) {
       const errors = [];
       for (const o of byId.values()) {
         const def = objectTypes[o.__type];
-        if (!def) { errors.push({ id: o.__type, error: "알 수 없는 타입" }); continue; }
+        if (!def) { errors.push({ id: o.__type, error: "unknown type" }); continue; }
         for (const [name, d] of Object.entries(def.properties)) {
           const v = o[name];
-          if (v == null) { if (d.required) errors.push({ id: pkOf(o.__type, o), prop: name, error: "필수 누락" }); continue; }
+          if (v == null) { if (d.required) errors.push({ id: pkOf(o.__type, o), prop: name, error: "missing required" }); continue; }
           const e = checkProp(v, d);
           if (e) errors.push({ id: pkOf(o.__type, o), prop: name, error: e });
         }
@@ -128,9 +128,9 @@ export function createStore(dataset, opts = {}) {
     /* ── Action dispatch (the only write-back path UI should use) ── */
     dispatch(actionName, params = {}, actor = "user") {
       const a = actionTypes[actionName];
-      if (!a) throw new Error(`알 수 없는 액션 ${actionName}`);
+      if (!a) throw new Error(`unknown action ${actionName}`);
       const v = a.validate ? a.validate(store, params) : true;
-      if (v !== true) throw new Error(typeof v === "string" ? v : "검증 실패");
+      if (v !== true) throw new Error(typeof v === "string" ? v : "validation failed");
       const result = a.apply(store, params);
       history.push({ action: actionName, params, actor, at: now() });
       store._persist();

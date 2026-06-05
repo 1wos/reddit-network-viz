@@ -58,4 +58,4 @@ for (const t of [0.10, 0.15, 0.20, 0.25, 0.30, 0.35]) {
   // sweet spot = no fabrication AND max correct recall
   if (nf === 100 && (!best || r.correct > best.correct)) best = { t, correct: r.correct };
 }
-console.log(`  → sweet spot: threshold=${best?.t} (noFabrication=100% with max recall ${best?.correct}%). 현재 기본값 0.25와 일치.`);
+console.log(`  → sweet spot: threshold=${best?.t} (noFabrication=100% with max recall ${best?.correct}%). Matches the 0.25 default.`);

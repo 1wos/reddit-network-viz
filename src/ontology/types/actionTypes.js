@@ -17,8 +17,8 @@ export const ACTION_TYPES = {
     params: { signalId: { type: "ref", ref: "Signal", required: true } },
     validate: (store, p) => {
       const s = store.get(p.signalId);
-      if (!s) return "시그널을 찾을 수 없음";
-      if (s.status !== "open") return "이미 처리된 시그널";
+      if (!s) return "signal not found";
+      if (s.status !== "open") return "signal already handled";
       return true;
     },
     apply: (store, p) => store.patch(p.signalId, { status: "ack", ackAt: store.now() }),
@@ -32,9 +32,9 @@ export const ACTION_TYPES = {
       targetSignalId: { type: "ref", ref: "Signal" },
     },
     validate: (store, p) => {
-      if (!store.get(p.signalId)) return "시그널을 찾을 수 없음";
-      if (p.targetSignalId && !store.get(p.targetSignalId)) return "대상 시그널을 찾을 수 없음";
-      if (p.targetSignalId === p.signalId) return "자기 자신으로 격상 불가";
+      if (!store.get(p.signalId)) return "signal not found";
+      if (p.targetSignalId && !store.get(p.targetSignalId)) return "target signal not found";
+      if (p.targetSignalId === p.signalId) return "cannot escalate to itself";
       return true;
     },
     apply: (store, p) => {
@@ -48,7 +48,7 @@ export const ACTION_TYPES = {
     apiName: "createWatchlist",
     label: "Create watchlist",
     params: { name: { type: "string", required: true } },
-    validate: (store, p) => (p.name && p.name.trim() ? true : "이름이 필요함"),
+    validate: (store, p) => (p.name && p.name.trim() ? true : "name is required"),
     apply: (store, p) => {
       const id = `wl_${slug(p.name)}_${store.now()}`;
       store.upsert("Watchlist", { id, label: p.name.trim(), entityIds: [], createdAt: store.now() });
@@ -64,10 +64,10 @@ export const ACTION_TYPES = {
       watchlistId: { type: "ref", ref: "Watchlist", required: true },
     },
     validate: (store, p) => {
-      if (!store.get(p.entityId)) return "엔티티를 찾을 수 없음";
+      if (!store.get(p.entityId)) return "entity not found";
       const wl = store.get(p.watchlistId);
-      if (!wl) return "워치리스트를 찾을 수 없음";
-      if ((wl.entityIds || []).includes(p.entityId)) return "이미 워치리스트에 있음";
+      if (!wl) return "watchlist not found";
+      if ((wl.entityIds || []).includes(p.entityId)) return "already in watchlist";
       return true;
     },
     apply: (store, p) => {
@@ -85,8 +85,8 @@ export const ACTION_TYPES = {
       note: { type: "string" },
     },
     validate: (store, p) => {
-      if (!store.get(p.sourceId)) return "출처 객체를 찾을 수 없음";
-      if (!store.get(p.postId)) return "게시글을 찾을 수 없음";
+      if (!store.get(p.sourceId)) return "source object not found";
+      if (!store.get(p.postId)) return "post not found";
       return true;
     },
     apply: (store, p) =>
