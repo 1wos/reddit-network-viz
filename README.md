@@ -54,10 +54,11 @@ The retrieval layer (**GraphRAG**) resolves the question to ontology anchors, ex
 | --- | --- |
 | Citation faithfulness / no-fabrication | **98.8% / 100%** |
 | Paraphrase recall@3 (hashing → real embeddings) | **66.7% → 100%** |
-| Embedding latency at equal recall (Upstage vs Gemini) | **87ms vs 523ms** |
+| Rerank MRR (heuristic → Cohere rerank-v3.5) | **0.49 → 0.83** |
+| Embedding latency at equal recall (Upstage / Cohere / Gemini) | **115 / 252 / 473 ms** |
 | LLM providers verified live on the same grounded bundle | **4** (Claude · Solar · Grok · GPT) |
-| Terraform validated / plan-verified on live accounts | **3 clouds / GCP + Azure** |
-| CI quality gates | **9 passing** |
+| Terraform plan-verified on live accounts | **3 clouds** (AWS · GCP · Azure) |
+| CI quality gates | **10 passing** |
 
 * * *
 
