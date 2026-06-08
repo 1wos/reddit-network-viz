@@ -8,7 +8,7 @@
  */
 
 import { matchIntent } from "./intents.js";
-import { semanticSearch } from "../embeddings/index.js";
+import { semanticSearch, rerankByVector } from "../embeddings/index.js";
 
 const SEMANTIC_THRESHOLD = 0.25; // below this, a vector "match" is noise → stay ungrounded.
 // (Tuned on the eval golden set: off-domain queries peak ~0.20 via n-gram collisions
@@ -115,6 +115,14 @@ export function planQuery(store, question, opts = {}) {
   const slots = {};
   for (const spec of intent.slots) slots[spec.name] = fillSlot(store, anchors, spec);
 
+  // KG-RAG stage 3 — Vector Reranking: reorder graph-expanded slot candidates by
+  // query relevance (vector sim blended with graph weight). Only when a vector
+  // index is supplied; pure reorder, so grounding/recall are preserved.
+  const reranked = !!(opts.index && opts.rerank !== false);
+  if (reranked) {
+    for (const name of Object.keys(slots)) slots[name] = rerankByVector(opts.index, question, slots[name], opts);
+  }
+
   let path = null;
   if (intent.pathfind && anchors.length >= 2) path = bfsPath(store, anchors[0], anchors[1].id);
 
@@ -128,6 +136,7 @@ export function planQuery(store, question, opts = {}) {
     intent: { id: intent.id, label: intent.label },
     grounded,
     retrieval: via,
+    reranked,
     anchors: anchors.map((a) => ({ id: a.id, label: a.label, type: a.__type, frequency: a.frequency })),
     slots,
     path,

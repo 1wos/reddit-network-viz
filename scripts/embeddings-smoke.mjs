@@ -43,5 +43,18 @@ ok(lex.retrieval === "lexical" && lex.supportStatus === "supported", "exact matc
 const none = answerWithGraphRAG(store, "Why is the weather nice today?", { index });
 ok(none.supportStatus === "unsupported", `no-evidence question → ${none.supportStatus} (below vector threshold, no fabrication)`);
 
-console.log(failed ? `\n❌ ${failed} failed` : "\n✅ ALL GREEN — Contextual embeddings + vector + hybrid retrieval");
+// KG-RAG stage 3 — Vector Reranking: with an index, graph-expanded slot candidates
+// are reordered by query relevance (vsim blended with graph weight).
+const rr = answerWithGraphRAG(store, "Which companies are connected to AI datacenter discussions?", { index });
+ok(rr.reranked === true, "reranking active when index supplied");
+const rrLists = Object.values(rr.slots).filter((l) => l.length);
+ok(rrLists.length > 0 && rrLists.every((l) => l.every((n) => typeof n.rerankScore === "number")), "reranked slot candidates carry rerankScore/vsim");
+ok(rrLists.every((l) => l.every((n, i) => i === 0 || l[i - 1].rerankScore >= n.rerankScore)), "each slot ordered desc by rerankScore");
+ok(rr.grounded && rr.supportStatus !== "unsupported", "reranking preserves grounding/support");
+
+// no-index path is NOT reranked → the deterministic eval/CI path is unchanged
+const noRr = answerWithGraphRAG(store, "Which companies are connected to AI datacenter discussions?");
+ok(noRr.reranked === false, "no index → no reranking (eval path unchanged)");
+
+console.log(failed ? `\n❌ ${failed} failed` : "\n✅ ALL GREEN — Contextual embeddings + vector + hybrid retrieval + KG-RAG reranking");
 process.exit(failed ? 1 : 0);

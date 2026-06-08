@@ -62,6 +62,9 @@ export default function OntologyQueryPanel({ data, C, onSelectNode }) {
             {ans.retrieval && ans.retrieval !== "none" && (
               <span style={{ fontSize: 8, padding: "2px 5px", borderRadius: 5, background: C.cyan + "18", color: C.cyan, letterSpacing: 0.5 }} title="anchor retrieval mode">{ans.retrieval === "semantic" ? "🔎 vector" : ans.retrieval}</span>
             )}
+            {ans.reranked && (
+              <span style={{ fontSize: 8, padding: "2px 5px", borderRadius: 5, background: C.purple + "18", color: C.purple, letterSpacing: 0.5 }} title="KG-RAG: graph-expanded candidates reranked by vector similarity">🔀 reranked</span>
+            )}
             <span style={{ fontSize: 8, color: C.purple }}>conf {Math.round(ans.confidence * 100)}%</span>
             <span style={{ fontSize: 7.5, color: C.dim, marginLeft: "auto" }} title="ontology context hash">ctx·{ans.context?.hash}</span>
           </div>

@@ -32,5 +32,17 @@ export class VectorIndex {
       .slice(0, k);
   }
 
+  /** Stored vector for an id (or null) — lets callers rerank a known candidate set. */
+  vectorOf(id) {
+    const it = this.items.find((x) => x.id === id);
+    return it ? it.vector : null;
+  }
+
+  /** Cosine similarity of a query vector against a stored id (0 if absent). */
+  similarityTo(id, queryVector) {
+    const v = this.vectorOf(id);
+    return v ? dot(queryVector, v) : 0;
+  }
+
   get size() { return this.items.length; }
 }
