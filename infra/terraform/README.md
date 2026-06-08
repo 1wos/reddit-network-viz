@@ -1,31 +1,34 @@
-# infra/terraform — same stack, the Terraform way (for comparison)
+# infra/terraform — multi-cloud IaC
 
-The CDK stack and this Terraform config provision the *same* AWS resources
-(S3 + container Lambda + Bedrock IAM). Compare them to learn the two IaC styles:
+The ingestion stack (object storage + container serverless + an identity with
+model-invoke permission) declared as HCL for **all three major clouds**. One tool,
+provider-agnostic skill — each module provisions the cloud's native primitives,
+not a forced one-size-fits-all.
 
-| | CDK | Terraform |
-|---|---|---|
-| Language | TypeScript (imperative) | HCL (declarative) |
-| Under the hood | CloudFormation | provider APIs |
-| Image build | CDK builds it for you | build + push to ECR yourself |
-| Commands | `cdk synth / deploy / destroy` | `terraform plan / apply / destroy` |
+| Cloud | Storage | Serverless container | Identity / model access |
+| --- | --- | --- | --- |
+| **AWS** (`aws/`) | S3 bucket | Lambda (container image) | IAM role → `bedrock:InvokeModel` |
+| **GCP** (`gcp/`) | GCS bucket | Cloud Run v2 | Service account → `aiplatform.user` |
+| **Azure** (`azure/`) | Blob storage | Container Apps | Managed identity → Blob Data Contributor |
 
-## Run
-
-```bash
-cd infra/terraform
-terraform init
-terraform plan  -var="image_uri=<ECR image uri>"   # preview, free
-terraform apply -var="image_uri=<ECR image uri>"   # create
-terraform destroy                                  # tear down
-```
-
-Build/push the image first (Terraform references it by `image_uri`):
+All three are validated offline (no cloud credentials — `init` only downloads the
+provider, `validate` checks the config against its schema):
 
 ```bash
-aws ecr create-repository --repository-name graph-ingest
-docker build -t graph-ingest services/graph-ingest
-# docker tag + push to the ECR repo, then pass that URI as image_uri
+for c in aws gcp azure; do (cd $c && terraform init && terraform validate); done
+# → Success! The configuration is valid.  (×3)
 ```
 
-> CDK는 이미지 빌드까지 알아서 해주고, Terraform은 네가 직접 빌드/푸시해서 URI를 넘겨줘 — 이 차이가 두 도구의 성격(통합형 vs 범용형)을 잘 보여줘.
+`terraform plan` was additionally run against live accounts to confirm the configs
+are accepted by the real provider APIs (no resources created):
+
+| Cloud | Check | Result |
+| --- | --- | --- |
+| AWS | `validate` | valid |
+| GCP | `validate` + `plan` (live project) | **Plan: 5 to add** |
+| Azure | `validate` + `plan` (live subscription) | **Plan: 7 to add** |
+
+`terraform plan` / `apply` need that cloud's credentials and an image URI; the
+actual deploy proof for this project is the **kind + Helm** Kubernetes deploy
+(see [`platform/RUNBOOK.md`](../../platform/RUNBOOK.md)) — Terraform here
+demonstrates cloud-agnostic IaC, not a third deployment target.

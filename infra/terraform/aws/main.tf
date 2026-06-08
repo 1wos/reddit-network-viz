@@ -1,11 +1,7 @@
-## Terraform equivalent of the CDK IngestStack — same infra, declarative HCL.
-## Provisions: S3 snapshot bucket + container Lambda (LangGraph) + Bedrock IAM.
-##
-##   cd infra/terraform
-##   terraform init
-##   terraform plan      # preview (free, no changes)
-##   terraform apply     # create resources
-##   terraform destroy   # tear down
+## AWS — ingest stack as declarative HCL.
+## Object storage (S3) + container serverless (Lambda) + IAM (Bedrock invoke).
+##   terraform init && terraform validate          # offline, no credentials
+##   terraform plan -var="image_uri=<ECR uri>"     # preview (needs AWS creds)
 
 terraform {
   required_providers {
@@ -22,11 +18,10 @@ variable "region" {
   default = "us-east-1"
 }
 
-# Container image for the Lambda is pushed to ECR (build/push outside Terraform,
-# or use the aws_ecr + docker provider). Reference it by URI here.
 variable "image_uri" {
   type        = string
   description = "ECR image URI for services/graph-ingest (built from its Dockerfile)"
+  default     = "000000000000.dkr.ecr.us-east-1.amazonaws.com/graph-ingest:latest"
 }
 
 # 1) Snapshot bucket
@@ -39,7 +34,7 @@ resource "aws_s3_bucket" "instances" {
 resource "aws_iam_role" "ingest" {
   name = "redditpulse-ingest-role"
   assume_role_policy = jsonencode({
-    Version = "2012-10-17",
+    Version   = "2012-10-17",
     Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "lambda.amazonaws.com" } }]
   })
 }
