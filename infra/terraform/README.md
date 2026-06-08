@@ -24,7 +24,7 @@ are accepted by the real provider APIs (no resources created):
 
 | Cloud | Check | Result |
 | --- | --- | --- |
-| AWS | `validate` | valid |
+| AWS | `validate` + `plan` (live account) | **Plan: 4 to add** |
 | GCP | `validate` + `plan` (live project) | **Plan: 5 to add** |
 | Azure | `validate` + `plan` (live subscription) | **Plan: 7 to add** |
 
