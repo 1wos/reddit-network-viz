@@ -1,5 +1,5 @@
 /**
- * Vocabulary / alias resolver (gap filled from seocho's ManagedVocabularyResolver)
+ * Vocabulary / alias resolver
  *
  * Query-time alias normalization: maps colloquial/synonym phrases to canonical
  * ontology node ids BEFORE retrieval, so "the Fed" → federal_reserve, "team

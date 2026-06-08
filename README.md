@@ -180,6 +180,11 @@ The **r/finance** preset ships a hand-authored ontology spanning NVIDIA, OpenAI,
 - **Neo4j / graph database** — persist the ontology for large-scale querying
 - **Streaming market/news signals** — fuse Reddit sentiment with price/news feeds
 
+## Related
+
+Parts of the ontology and grounded-GraphRAG design build on my work on the
+open-source **seocho** GraphRAG project — [github.com/1wos/seocho](https://github.com/1wos/seocho).
+
 ## License
 
 MIT

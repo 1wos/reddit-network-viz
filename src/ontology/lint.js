@@ -1,5 +1,5 @@
 /**
- * Ontology lint (gap filled from seocho's ontology_lint / ISO-704 rigor)
+ * Ontology lint (ISO-704 terminological rigor)
  *
  * Validates the ontology *design quality*, not just per-instance schema:
  *  - dangling links (endpoint missing)

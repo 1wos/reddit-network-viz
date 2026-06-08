@@ -3,7 +3,7 @@
  *
  * Serializes a query plan into an inspectable evidence bundle and a grounded
  * answer with an explicit `supportStatus` (supported | partial | unsupported)
- * that NAMES the slots still missing from the graph — seocho's discipline:
+ * that NAMES the slots still missing from the graph — the discipline is:
  * "answer from the bundle while naming what is still missing", so the graph is
  * the answer substrate, not a reranking hint.
  */

@@ -1,7 +1,7 @@
 /**
  * Engine — Intent registry (declarative slot schema)
  *
- * Borrowed from seocho's GraphRAG handoff spec: an answer is grounded only when
+ * Grounding-first retrieval: an answer is grounded only when
  * we map the question to an intent with explicit *required slots*, fill those
  * slots from the graph, and name what is still missing. Each intent declares:
  *   - patterns: regexes that vote for this intent

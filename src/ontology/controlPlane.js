@@ -1,5 +1,5 @@
 /**
- * Ontology Control Plane (lite) — from seocho's OntologySignal → OntologyProfile.
+ * Ontology Control Plane (lite) — typed signals → profile → compare/promote.
  *
  * Every run emits typed *signals* (design issues from lint + query-side
  * discoveries like unresolved anchors, missing slots, low confidence, alias

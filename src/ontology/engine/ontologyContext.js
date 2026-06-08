@@ -2,7 +2,7 @@
  * Engine — Ontology Context
  *
  * A compact, hashable descriptor of the live ontology (types, relations, live
- * counts). Borrowed from seocho's invariant: the SAME ontology context must
+ * counts). The invariant: the SAME ontology context must
  * travel the whole loop (ingest → store → query → answer), so every answer can
  * cite the exact contract+hash it was grounded against.
  */
