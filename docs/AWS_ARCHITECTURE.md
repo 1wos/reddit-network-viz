@@ -47,9 +47,9 @@ flowchart LR
 Because every external dependency sits behind an interface, "PoC on mock data"
 and "production on AWS" are the *same architecture* with different adapters.
 
-## "AWS 꼭 써야 하나요?" — 아니요 (초보자용)
+## AWS는 선택사항
 
-**포트폴리오엔 실제 배포가 *필수가 아님*.** 이 문서(설계도) + 코드의 어댑터만으로 "AWS로 확장 가능하게 설계했다"는 역량은 증명됨. 면접에선 *"deterministic으로 검증했고, Bedrock/Lambda 어댑터를 열어뒀습니다"* 라고 말하면 충분.
+프로젝트는 클라우드 없이 결정론적으로 완전히 동작한다. 이 설계도 + 코드의 어댑터만으로 AWS 확장성을 보여주며, Bedrock/Lambda는 열어둔 어댑터이지 의존성이 아니다.
 
 각 AWS 서비스 한 줄 요약:
 
