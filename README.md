@@ -34,7 +34,7 @@ The retrieval layer (**GraphRAG**) resolves the question to ontology anchors, ex
 
 ## Key Features
 
-**Typed Ontology** — 10 entity types and 9 relationship types with confidence, lineage, and a kinetic action layer (TBox/ABox shared across the JS runtime and the Python ingest service). Runs on a hand-authored finance preset *and* on real data — the open **FiQA** sentiment dataset ingests into the same ontology (517 entities, lint-clean).
+**Typed Ontology** — 10 entity types and 9 relationship types with confidence, lineage, and a kinetic action layer (TBox/ABox shared across the JS runtime and the Python ingest service). Runs on a hand-authored finance preset *and* on real data — two open datasets (**FiQA** financial news and a **Reddit** stock-sentiment set) ingest into the same ontology with extracted entities, authors, and tickers (lint-clean).
 
 **Grounded GraphRAG** — intent-driven retrieval with explicit support status; when the graph cannot answer, it says so instead of fabricating.
 

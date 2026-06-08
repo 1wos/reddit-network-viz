@@ -41,5 +41,18 @@ console.log(`   top entity: ${top.label} (mentioned ${top.frequency}x, sentiment
 console.log(`   » ${a.summary}`);
 ok(a.grounded && a.anchors[0]?.id === top.id, `GraphRAG anchors on the real entity (${top.label})`);
 
-console.log(failed ? `\n❌ ${failed} failed` : "\n✅ ALL GREEN — real FiQA dataset → valid, queryable ontology");
+// ── Dataset 2: Reddit Stock Sentiment — real social data (authors, multi-subreddit, ticker extraction) ──
+const { buildRedditSentimentDataset } = await import("../src/ontology/ingest/redditSentimentDataset.js");
+const rrows = JSON.parse(fs.readFileSync(new URL("../data/reddit-stock-sentiment.json", import.meta.url)));
+ok(rrows.length > 500, `loaded ${rrows.length} real Reddit rows`);
+const rstore = createStore(buildRedditSentimentDataset(rrows));
+const rv = rstore.validate();
+ok(rv.ok, `Reddit-built ontology passes schema validation${rv.ok ? "" : `: ${JSON.stringify(rv.errors.slice(0, 3))}`}`);
+const rsubs = rstore.all("Subreddit").length, rauth = rstore.all("Author").length, rtkr = rstore.all("AssetOrTicker");
+console.log(`   reddit: posts=${rstore.all("RedditPost").length}  subreddits=${rsubs}  authors=${rauth}  tickers=${rtkr.length}`);
+ok(rsubs >= 3, "multiple real subreddits (stocks, WSB, …)");
+ok(rauth > 50, "real authors with AUTHORED_BY links");
+ok(rtkr.length > 0, `tickers extracted from free text (${rtkr.slice(0, 6).map((t) => t.ticker).join(", ")})`);
+
+console.log(failed ? `\n❌ ${failed} failed` : "\n✅ ALL GREEN — real datasets (FiQA news + Reddit social) → valid, queryable ontologies");
 process.exit(failed ? 1 : 0);
