@@ -3,7 +3,7 @@
 **Models social-finance discussion as a typed ontology, then answers questions over it with grounded, guardrailed retrieval.**
 
 ![architecture](https://img.shields.io/badge/architecture-neurosymbolic-6E56CF?style=flat-square)
-![ci](https://img.shields.io/badge/CI-9%20gates-3FB950?style=flat-square)
+![ci](https://img.shields.io/badge/CI-10%20gates-3FB950?style=flat-square)
 ![grounded](https://img.shields.io/badge/no--fabrication-100%25-3FB950?style=flat-square)
 ![iac](https://img.shields.io/badge/IaC-AWS%20·%20GCP%20·%20Azure-FF9900?style=flat-square)
 
