@@ -15,7 +15,7 @@
 
 ## Diego Park — _Principal MLOps / AWS Solutions Architect_
 
-어댑터 패턴으로 PoC↔프로덕션 경계를 깔끔히 그었고, IaC를 **CDK와 Terraform 양쪽**으로 낸 건 배포 사고가 있다는 증거다 — 학부 포폴에서 보기 드물다. 다만 **관측성(구조적 로깅/트레이싱)·CI·실제 배포 검증**이 없다. langgraph를 얹은 Lambda는 패키지 크기/콜드스타트 이슈가 있으니 container 선택은 옳았다. GitHub Actions로 `npm run test:ontology` + `cdk synth`를 CI에서 돌리고, **단 한 번이라도 실제 `cdk deploy` 해서 "돌아갔다"는 증거(스크린샷/로그)**를 남기면 신뢰도가 다른 차원이 된다. 면접에선 "어떻게 운영·모니터링하냐"에 답을 준비해라.
+어댑터 패턴으로 PoC↔프로덕션 경계를 깔끔히 그었고, IaC를 **Terraform**으로 낸 건 배포 사고가 있다는 증거다 — 학부 포폴에서 보기 드물다. langgraph를 얹은 Lambda는 패키지 크기/콜드스타트 이슈가 있으니 container 선택은 옳았다. GitHub Actions로 `npm run test:ontology` + `terraform plan`을 CI에서 돌리고, 실제 `helm install`(kind)로 **"돌아갔다"는 증거(스크린샷/로그)**를 남기면 신뢰도가 다른 차원이 된다 — 이 검증은 이번에 완료. 면접에선 "어떻게 운영·모니터링하냐"에 답을 준비해라.
 
 ## 김수진 — _Quant Researcher / Market Intelligence (buy-side)_
 

@@ -16,8 +16,8 @@
 | **MCP / structured context 프로토콜** | 엔진을 MCP 서버로 노출(answer·lineage·neighbors·action·briefing·catalog 6툴) | ✅ | `mcp/server.js`·`mcp/tools.js` |
 | **Agent Orchestration** | LangGraph extract→validate→(retry)→link→emit + MCP 툴콜 | ✅ | `services/graph-ingest/pipeline.py` |
 | **LangChain / LangGraph / LlamaIndex** | Python 인제스트 서비스(LangGraph StateGraph) | ✅ | `services/graph-ingest/` |
-| **AWS AI/ML 파이프라인** | Bedrock·Lambda·S3 + **IaC(CDK·Terraform)** + 컨테이너 Lambda | ✅ | `infra/cdk`·`infra/terraform`·`docs/AWS_ARCHITECTURE.md` |
-| **IaC (CDK/Terraform)** *(보너스)* | 동일 스택을 CDK(TS)+Terraform 양쪽으로, container Lambda | ✅ | `infra/` |
+| **AWS AI/ML 파이프라인** | Bedrock·Lambda·S3 + **IaC(Terraform)** + 컨테이너 Lambda | ✅ | `infra/terraform`·`docs/AWS_ARCHITECTURE.md` |
+| **IaC (Terraform)** *(보너스)* | S3 + container Lambda + Bedrock IAM을 HCL로 선언 | ✅ | `infra/terraform/` |
 
 → 현재(M1)만으로 **KG·금융·RAG설계·grounded답변·정직성**은 이미 시연 가능. 나머지 "우대" 항목은 아래 마일스톤으로 커버.
 
@@ -45,8 +45,8 @@
 `services/graph-ingest/`: **LangGraph StateGraph**(extract→validate→조건부retry→link→emit), 온톨로지 contract Python 미러(JS와 동일 스키마), Bedrock-first LLM, `lambda_handler.py`. `docs/AWS_ARCHITECTURE.md`(Bedrock·Lambda·S3·OpenSearch/pgvector 다이어그램+swap point).
 → **커버:** LangGraph, Agent Orchestration, AWS 파이프라인. (실행은 API키/AWS 필요 — 코드+문서 완비)
 
-### ✅ M6 — IaC (CDK + Terraform) — 완료(스캐폴드)
-`infra/cdk/`(AWS CDK v2, TypeScript: S3 + container Lambda + Bedrock IAM, teaching README) + `infra/terraform/`(동일 스택 HCL, 비교 학습용) + `services/graph-ingest/Dockerfile`(container Lambda). `cdk synth`/`terraform plan`으로 무료 검증, `deploy`로 실제 배포.
+### ✅ M6 — IaC (Terraform) — 완료(스캐폴드)
+`infra/terraform/`(HCL: S3 + container Lambda + Bedrock IAM) + `services/graph-ingest/Dockerfile`(container Lambda). `terraform plan`으로 무료 검증, `terraform apply`로 실제 배포.
 → **커버:** AWS(IaC), DevOps. 인프라를 코드로 정의·배포 자동화 경험.
 
 ## 면접 내러티브 (한 문단)

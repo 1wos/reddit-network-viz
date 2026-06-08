@@ -34,9 +34,10 @@
 - Mock data engine with 5 subreddit presets (technology, worldnews, science, gaming, **finance**)
 - Claude API integration ready for live Reddit analysis
 
-**Ontology / GraphRAG** *(new)*
-- Ontology schema of 10 entity types + 9 relationship types
-- Finance/market intelligence preset with evidence-backed entities
+**Ontology / GraphRAG / Neurosymbolic** *(new)*
+- Ontology schema of 10 entity types + 9 relationship types (the **TBox**)
+- Finance/market intelligence preset with evidence-backed instances (the **ABox**)
+- **Symbolic Guard** — a System-2 rule engine that checks LLM-proposed candidates against declarative rules and returns `valid / invalid / needs_review` with `firedRules` + `explanationPath`
 - Evidence & lineage panel, GraphRAG-style question panel, and a Daily Social Signal Brief — all on mock data, no API key required
 
 ## Tech Stack
@@ -58,7 +59,10 @@ redditpulse.jsx                  — root app (graph, charts, layout, theme)
 src/ontology/                    — ontology + GraphRAG layer (pure JS, no React)
 ├── schema.js                    — entity & relationship type definitions
 ├── mockOntologyData.js          — finance ontology + legacy-preset bridge
-└── graphRagEngine.js            — deterministic answer / evidence / briefing
+├── graphRagEngine.js            — deterministic answer / evidence / briefing
+└── symbolic/                    — Symbolic AI (System 2): rule engine over LLM output
+    ├── predicates.js            — pure predicate library (the rule body atoms)
+    └── guard.js                 — declarative rule sets → valid/invalid/needs_review
 
 src/components/                  — ontology UI panels (React)
 ├── OntologyQueryPanel.jsx       — GraphRAG-style question panel
@@ -108,6 +112,60 @@ The **🧠 Ask the ontology** panel answers predefined or free-typed questions:
 - *Which companies are connected to AI datacenter discussions?*
 
 Answers are produced by a **deterministic engine** ([`src/ontology/graphRagEngine.js`](src/ontology/graphRagEngine.js)) that walks the graph — no LLM/API key needed — and returns a short summary, related nodes, evidence snippets, a confidence score, and suggested follow-ups. The engine is intentionally shaped so the call site could later be swapped for an **LLM / MCP tool** returning the same JSON.
+
+### Neurosymbolic: pairing LLM intuition with symbolic logic
+
+The system is organized as **neural (System 1) proposes, symbolic (System 2) checks** —
+the LLM is fast and fluent but can fabricate, so its output is never the final word; a
+deterministic rule engine validates it against the ontology before anything is surfaced.
+
+| Axis | Concept | In this repo |
+| --- | --- | --- |
+| **Ontology** | Typed schema (TBox) + instances (ABox), one shared contract | [`types/objectTypes.js`](src/ontology/types/objectTypes.js) ↔ [`services/graph-ingest/ontology_contract.py`](services/graph-ingest/ontology_contract.py) |
+| **LLM connection** | Extract → Validate → Commit; LLM fills the ABox, never the TBox | LangGraph [`pipeline.py`](services/graph-ingest/pipeline.py) |
+| **Symbolic AI** | Declarative rules → `valid / invalid / needs_review`, `firedRules`, `explanationPath` | [`symbolic/guard.js`](src/ontology/symbolic/guard.js) |
+| **KG-RAG** | Entity linking → graph expansion → **vector reranking** → grounded answer (no answer without graph support) | [`engine/`](src/ontology/engine/) |
+
+The **Symbolic Guard** ([`src/ontology/symbolic/guard.js`](src/ontology/symbolic/guard.js)) is the
+System-2 layer. A candidate (e.g. "escalate this risk signal") is checked against a declarative
+rule set — rules are *data, not code*, the same discipline as the intent registry — and the guard
+returns a three-state verdict with the rules that fired and the graph path that justifies it:
+
+```js
+evaluateGuard(store, "escalateRisk", "geopolitical_risk")
+// → { decision: "valid",
+//     firedRules: ["grounded","typed_risk","open_status","magnitude_above","impacts_asset","has_evidence"],
+//     explanationPath: ["Geopolitical Risk", "Crude Oil", "post:r/finance:..."] }
+```
+
+A hard-rule violation (ungrounded id, already-handled signal, no asset impact) → `invalid`; all hard
+rules pass but evidence is missing → `needs_review`; everything holds → `valid`. This is what keeps a
+plausible-but-wrong LLM suggestion from being acted on. Run `npm run test:ontology` to see the guard
+triage every risk signal in the finance preset.
+
+#### The loop, closed
+
+`answerWithGuard(store, question)` wires the two halves into one pipeline: GraphRAG **proposes**
+candidates (System 1 / neural retrieval), the guard **checks** each one (System 2), and only the
+verdicts that pass are returned as `actionable` — nothing reaches the user as actionable until the
+rules clear it.
+
+```js
+answerWithGuard(store, "What market risks are emerging from Reddit discussions?")
+// proposes 5 risk candidates → guard gates them →
+// → { ...answer, guardrails: [...5 verdicts], actionable: ["geopolitical_risk"] }
+// (the other 4 are dropped: no modeled IMPACTS → asset, so not actionable)
+```
+
+#### Retrieval: deps-free by default, real embeddings on demand
+
+Vector retrieval runs on a deterministic, dependency-free `HashingEmbedder` so the
+demo works offline in the browser with no API key (and the browser stays keyless by
+design). The same `VectorIndex` / retrieval / reranking code is provider-agnostic:
+`resolveEmbedder()` swaps in a real semantic embedder (any OpenAI-compatible
+`/embeddings` endpoint) whenever a key is configured. Run `npm run embed:live` with
+`OPENAI_API_KEY` (or `MISTRAL_API_KEY` / `GEMINI_API_KEY`) to see real embeddings
+retrieve head-to-head against the hashing baseline.
 
 ### Finance / market intelligence use case
 
