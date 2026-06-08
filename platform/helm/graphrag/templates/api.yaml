@@ -22,6 +22,8 @@ spec:
           ports: [{ containerPort: {{ .Values.api.port }} }]
           env:
             {{- include "graphrag.commonEnv" . | nindent 12 }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.otel.endpoint | quote }}
             - name: OTEL_SERVICE_NAME
               value: graphrag-api
           # provider keys mounted from a Secret (must exist in the target env)

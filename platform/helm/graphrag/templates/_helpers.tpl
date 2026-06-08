@@ -7,6 +7,4 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "graphrag.commonEnv" -}}
 - name: REDIS_URL
   value: {{ .Values.redis.url | quote }}
-- name: OTEL_EXPORTER_OTLP_ENDPOINT
-  value: {{ .Values.otel.endpoint | quote }}
 {{- end -}}

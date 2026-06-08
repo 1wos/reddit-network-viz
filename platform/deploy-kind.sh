@@ -14,7 +14,7 @@ echo "▶ creating kind cluster (idempotent)…"
 kind create cluster --name "$CLUSTER" 2>/dev/null || echo "  cluster exists"
 
 for svc in api worker exporter; do
-  echo "▶ build + load graphrag-$svc…"
+  echo "▶ build + load graphrag-${svc}…"
   docker build -q -t "$REG/graphrag-$svc:dev" -f "platform/$svc/Dockerfile" .
   kind load docker-image "$REG/graphrag-$svc:dev" --name "$CLUSTER"
 done
