@@ -11,7 +11,7 @@
 const PRESETS = {
   openai: { base: "https://api.openai.com/v1", model: "text-embedding-3-small", keyEnv: "OPENAI_API_KEY" },
   mistral: { base: "https://api.mistral.ai/v1", model: "mistral-embed", keyEnv: "MISTRAL_API_KEY" },
-  gemini: { base: "https://generativelanguage.googleapis.com/v1beta/openai", model: "text-embedding-004", keyEnv: "GEMINI_API_KEY" },
+  gemini: { base: "https://generativelanguage.googleapis.com/v1beta/openai", model: "gemini-embedding-001", keyEnv: "GEMINI_API_KEY" },
 };
 
 function l2norm(v) {

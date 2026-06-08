@@ -17,7 +17,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      # 7 gates: 5 smokes + ontology lint (design + competency questions) + eval scorecard
+      # 9 gates: 7 smokes (incl. symbolic guard + cohere adapters) + ontology lint (design + competency questions) + eval scorecard
       - run: npm run test:ontology
       - name: retriever ablation (informational)
         run: npm run bench
@@ -49,6 +49,6 @@ jobs:
       - run: helm lint platform/helm/graphrag -f platform/helm/graphrag/values.yaml -f platform/helm/graphrag/values-prod.yaml
       - name: render all envs
         run: |
-          for env in dev stage prod; do
+          for env in dev prod; do
             helm template gr platform/helm/graphrag -f platform/helm/graphrag/values.yaml -f platform/helm/graphrag/values-$env.yaml > /dev/null
           done

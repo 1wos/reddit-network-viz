@@ -92,9 +92,9 @@ export const PROVIDERS = {
   grok:       { keyEnv: ["XAI_API_KEY", "GROK_API_KEY"], base: "https://api.x.ai/v1",      model: "grok-3", aliases: ["xai"] },
   kimi:       { keyEnv: ["MOONSHOT_API_KEY", "KIMI_API_KEY"], base: "https://api.moonshot.ai/v1", model: "kimi-k2.5", temperature: 1, maxTokens: 4096, aliases: ["moonshot"] },
   qwen:       { keyEnv: ["DASHSCOPE_API_KEY", "QWEN_API_KEY"], base: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", model: "qwen-plus" },
-  // Kakao Kanana-o (CBT). Korean-specialized multimodal. Endpoint/format unconfirmed —
-  // override KANANA_BASE_URL / KANANA_MODEL with the official CBT docs when issued.
-  kanana:     { keyEnv: ["KANANA_API_KEY"], base: "https://api-omni.kanana.ai/v1", model: "kanana-1.5-o-9.8b-2602", aliases: ["kakao"] },
+  // Upstage Solar — Korean frontier LLM, OpenAI-compatible. Default solar-pro2;
+  // override UPSTAGE_MODEL=solar-pro3 for the newer (2026-01) reasoning model.
+  upstage:    { keyEnv: ["UPSTAGE_API_KEY"], base: "https://api.upstage.ai/v1", model: "solar-pro2", aliases: ["solar"] },
   doubao:     { keyEnv: ["ARK_API_KEY", "DOUBAO_API_KEY"], base: "https://ark.cn-beijing.volces.com/api/v3", model: "doubao-pro-32k", aliases: ["bytedance", "volcano"] },
   // — free tier —
   mistral:    { keyEnv: ["MISTRAL_API_KEY"],    base: "https://api.mistral.ai/v1",        model: "mistral-large-latest", free: true }, // ~1B tokens/mo free
