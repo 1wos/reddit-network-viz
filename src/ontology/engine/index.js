@@ -13,8 +13,10 @@ import { buildBundle } from "./evidenceBundle.js";
 import { buildVectorIndex, semanticSearch, defaultEmbedder } from "../embeddings/index.js";
 import { answerSynthesisPrompt } from "../llm/prompts.js";
 import { defaultVocab } from "../vocab.js";
+import { evaluateGuard, guardAllRiskSignals, RULE_SETS } from "../symbolic/guard.js";
 
 export { buildOntologyContext, planQuery, buildBundle, buildVectorIndex, semanticSearch, defaultEmbedder };
+export { evaluateGuard, guardAllRiskSignals, RULE_SETS };
 
 /**
  * Answer a question against a live ontology store, grounded with evidence.
@@ -25,7 +27,7 @@ export function answerWithGraphRAG(store, question, opts = {}) {
   const context = buildOntologyContext(store);
   const plan = planQuery(store, question, { vocab: defaultVocab, ...opts });
   const bundle = buildBundle(store, plan, context);
-  return { question, ...bundle, retrieval: plan.retrieval, context: { hash: context.hash, objectCounts: context.objectCounts } };
+  return { question, ...bundle, retrieval: plan.retrieval, reranked: plan.reranked, context: { hash: context.hash, objectCounts: context.objectCounts } };
 }
 
 /**
@@ -46,6 +48,35 @@ export async function answerWithGraphRAGLLM(store, question, opts = {}) {
     }
   }
   return { ...answer, synthesizedBy: "deterministic" };
+}
+
+/**
+ * Neurosymbolic loop, closed: GraphRAG *proposes* (System 1 / neural retrieval),
+ * the Symbolic Guard *checks* (System 2). Runs the answer, pulls the RiskSignal
+ * candidates it surfaced (anchors + slot/related nodes), guards each one, and
+ * returns the answer enriched with `guardrails` (per-candidate verdicts) and
+ * `actionable` (only the candidates that passed). This is the single pipeline the
+ * deck describes: the LLM/retrieval suggestion is never surfaced as actionable
+ * until the rules clear it.
+ */
+export function answerWithGuard(store, question, opts = {}) {
+  const answer = answerWithGraphRAG(store, question, opts);
+  const ruleSet = opts.ruleSet || "escalateRisk";
+  const subjectType = RULE_SETS[ruleSet]?.subjectType || "RiskSignal";
+
+  // Candidate ids the answer proposed, de-duped, kept only if they are the
+  // guard's subject type (e.g. RiskSignal) — those are what we let the guard gate.
+  const proposedIds = [
+    ...answer.anchors.map((a) => a.id),
+    ...answer.relatedNodes.map((n) => n.id),
+    ...Object.values(answer.slots).flat().map((n) => n.id),
+  ];
+  const candidates = [...new Set(proposedIds)].filter((id) => store.get(id)?.__type === subjectType);
+
+  const guardrails = candidates.map((id) => evaluateGuard(store, ruleSet, id));
+  const actionable = guardrails.filter((v) => v.decision === "valid").map((v) => v.subject);
+
+  return { ...answer, guardrails, actionable };
 }
 
 /** Suggested questions that exercise each intent against the finance graph. */

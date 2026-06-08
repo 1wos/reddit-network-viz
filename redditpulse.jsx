@@ -20,6 +20,7 @@ import { nodeTypeMeta, nodeTypeColor } from "./src/ontology/schema.js";
 import { getFinanceOntology, enrichLegacy } from "./src/ontology/mockOntologyData.js";
 import OntologyQueryPanel from "./src/components/OntologyQueryPanel.jsx";
 import EvidencePanel from "./src/components/EvidencePanel.jsx";
+import SymbolicGuardPanel from "./src/components/SymbolicGuardPanel.jsx";
 import DailyBriefing from "./src/components/DailyBriefing.jsx";
 
 /* ─── Chart.js Controller Registration ───
@@ -835,6 +836,16 @@ export default function App(){
             </h3>
             <OntologyQueryPanel data={data} C={C} onSelectNode={selectById}/>
           </div>
+
+          {/* Symbolic Guard (System 2 over the LLM's System 1) — finance preset only */}
+          {sub==="finance"&&(
+            <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
+              <h3 style={{margin:"0 0 10px",fontSize:10,fontWeight:600,color:C.dim,letterSpacing:1.5,textTransform:"uppercase"}}>
+                🛡️ symbolic guard
+              </h3>
+              <SymbolicGuardPanel data={data} C={C} onSelectNode={selectById}/>
+            </div>
+          )}
 
           {/* Trend */}
           <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
